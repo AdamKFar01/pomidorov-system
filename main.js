@@ -1,11 +1,14 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 
+const iconPath = path.join(__dirname, "logo.png");
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 400,
     height: 600,
     resizable: false,
+    icon: iconPath,
     webPreferences: {
       contextIsolation: true,
     },
@@ -16,6 +19,11 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // On macOS the window "icon" option is ignored, the dock icon is used instead.
+  if (process.platform === "darwin" && app.dock) {
+    app.dock.setIcon(iconPath);
+  }
+
   createWindow();
 
   app.on("activate", () => {

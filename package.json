@@ -12,5 +12,12 @@
   "devDependencies": {
     "electron": "^43.4.1",
     "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.adam.pomidorov",
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity"
+    }
   }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "pomidorov",
+  "version": "1.0.0",
+  "description": "A desktop app to help you use the Pomodoro technique.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

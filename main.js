@@ -1,7 +1,7 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 
-const iconPath = path.join(__dirname, "logo.png");
+const iconPath = path.join(__dirname, "build/icon.png");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -19,8 +19,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // On macOS the window "icon" option is ignored, the dock icon is used instead.
-  if (process.platform === "darwin" && app.dock) {
+  // Dev only: unpackaged runs show the generic Electron icon otherwise. The
+  // packaged app gets its icon from the bundle, which macOS masks for us.
+  if (!app.isPackaged && process.platform === "darwin" && app.dock) {
     app.dock.setIcon(iconPath);
   }
 

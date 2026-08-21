@@ -4,7 +4,8 @@
   "description": "A desktop app to help you use the Pomodoro technique.",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --mac"
   },
   "author": "",
   "license": "UNLICENSED",

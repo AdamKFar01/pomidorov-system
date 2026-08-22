@@ -1,78 +1,235 @@
-const DURATIONS = {
-  work: 25 * 60,
-  short: 5 * 60,
-  long: 15 * 60,
+const DEFAULTS = { work: 25, short: 5, long: 15 };
+const LABELS = { work: "Focus", short: "Short break", long: "Long break" };
+const STORE_KEY = "pomidorov.lengths";
+const LIMITS = { min: 1, max: 180 };
+
+let lengths = { ...DEFAULTS };
+let mode = "work";
+let secondsLeft = lengths.work * 60;
+let ticker = null;
+let finished = 0;
+
+const el = {
+  timer: document.getElementById("timer"),
+  sessionName: document.getElementById("sessionName"),
+  sessionState: document.getElementById("sessionState"),
+  dot: document.querySelector(".dot"),
+  toggle: document.getElementById("toggleBtn"),
+  reset: document.getElementById("resetBtn"),
+  count: document.getElementById("count"),
+  modes: document.querySelectorAll(".segmented button"),
+  settings: document.getElementById("settings"),
+  settingsToggle: document.getElementById("settingsToggle"),
+  form: document.getElementById("settingsForm"),
+  restore: document.getElementById("restoreBtn"),
+  saved: document.getElementById("savedNote"),
 };
 
-let mode = "work";
-let secondsLeft = DURATIONS[mode];
-let timerId = null;
-let pomodoroCount = 0;
+const inputs = {
+  work: document.getElementById("workLen"),
+  short: document.getElementById("shortLen"),
+  long: document.getElementById("longLen"),
+};
 
-const timerEl = document.getElementById("timer");
-const startBtn = document.getElementById("startBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const resetBtn = document.getElementById("resetBtn");
-const countEl = document.getElementById("count");
-const modeButtons = document.querySelectorAll(".mode-btn");
+const errors = {
+  work: document.getElementById("workLenError"),
+  short: document.getElementById("shortLenError"),
+  long: document.getElementById("longLenError"),
+};
 
-function formatTime(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
+const isRunning = () => ticker !== null;
 
-function updateDisplay() {
-  timerEl.textContent = formatTime(secondsLeft);
-}
+/* Rendering */
 
-function tick() {
-  if (secondsLeft <= 0) {
-    clearInterval(timerId);
-    timerId = null;
-    if (mode === "work") {
-      pomodoroCount++;
-      countEl.textContent = pomodoroCount;
-    }
-    return;
+function render() {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  el.timer.textContent =
+    `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  const done = secondsLeft === 0;
+  el.timer.dataset.finished = String(done);
+  el.sessionName.textContent = LABELS[mode];
+  el.toggle.textContent = isRunning() ? "Pause" : "Start";
+  el.count.textContent = String(finished);
+
+  if (done) {
+    el.sessionState.textContent = "Finished";
+    el.dot.dataset.state = "done";
+  } else if (isRunning()) {
+    el.sessionState.textContent = "Running";
+    el.dot.dataset.state = "running";
+  } else if (secondsLeft === lengths[mode] * 60) {
+    el.sessionState.textContent = "Ready";
+    el.dot.dataset.state = "idle";
+  } else {
+    el.sessionState.textContent = "Paused";
+    el.dot.dataset.state = "idle";
   }
-  secondsLeft--;
-  updateDisplay();
 }
+
+/* Timer */
 
 function start() {
-  if (timerId) return;
-  timerId = setInterval(tick, 1000);
+  if (isRunning() || secondsLeft === 0) return;
+  ticker = setInterval(tick, 1000);
+  render();
 }
 
 function pause() {
-  clearInterval(timerId);
-  timerId = null;
+  clearInterval(ticker);
+  ticker = null;
+  render();
+}
+
+function tick() {
+  secondsLeft -= 1;
+  if (secondsLeft <= 0) {
+    secondsLeft = 0;
+    clearInterval(ticker);
+    ticker = null;
+    if (mode === "work") finished += 1;
+  }
+  render();
 }
 
 function reset() {
   pause();
-  secondsLeft = DURATIONS[mode];
-  updateDisplay();
+  secondsLeft = lengths[mode] * 60;
+  render();
 }
 
-function setMode(newMode) {
-  mode = newMode;
-  secondsLeft = DURATIONS[mode];
-  pause();
-  updateDisplay();
-
-  modeButtons.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.mode === mode);
+function selectMode(next) {
+  mode = next;
+  el.modes.forEach((button) => {
+    button.setAttribute("aria-selected", String(button.dataset.mode === next));
   });
+  reset();
 }
 
-startBtn.addEventListener("click", start);
-pauseBtn.addEventListener("click", pause);
-resetBtn.addEventListener("click", reset);
+/* Settings */
 
-modeButtons.forEach((btn) => {
-  btn.addEventListener("click", () => setMode(btn.dataset.mode));
+function readStored() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    for (const key of Object.keys(DEFAULTS)) {
+      const value = Number(saved[key]);
+      if (Number.isInteger(value) && value >= LIMITS.min && value <= LIMITS.max) {
+        lengths[key] = value;
+      }
+    }
+  } catch {
+    // Corrupt or unavailable storage just falls back to the defaults.
+  }
+}
+
+function fillInputs() {
+  for (const key of Object.keys(inputs)) {
+    inputs[key].value = String(lengths[key]);
+  }
+}
+
+function showError(key, message) {
+  errors[key].textContent = message;
+  errors[key].hidden = false;
+  inputs[key].setAttribute("aria-invalid", "true");
+}
+
+function clearError(key) {
+  errors[key].hidden = true;
+  inputs[key].removeAttribute("aria-invalid");
+}
+
+function validate() {
+  let valid = true;
+  const next = {};
+
+  for (const key of Object.keys(inputs)) {
+    const raw = inputs[key].value.trim();
+    const value = Number(raw);
+
+    if (raw === "") {
+      showError(key, "Enter a number of minutes.");
+      valid = false;
+    } else if (!Number.isInteger(value)) {
+      showError(key, "Use whole minutes only.");
+      valid = false;
+    } else if (value < LIMITS.min || value > LIMITS.max) {
+      showError(key, `Use ${LIMITS.min} to ${LIMITS.max} minutes.`);
+      valid = false;
+    } else {
+      clearError(key);
+      next[key] = value;
+    }
+  }
+
+  return valid ? next : null;
+}
+
+function save(event) {
+  event.preventDefault();
+  const next = validate();
+  if (!next) return;
+
+  lengths = next;
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(lengths));
+  } catch {
+    // Saving is a convenience; the session still uses the new lengths.
+  }
+
+  if (!isRunning()) {
+    secondsLeft = lengths[mode] * 60;
+  }
+  render();
+
+  el.saved.hidden = false;
+  setTimeout(() => { el.saved.hidden = true; }, 2000);
+}
+
+function restore() {
+  lengths = { ...DEFAULTS };
+  fillInputs();
+  Object.keys(inputs).forEach(clearError);
+  if (!isRunning()) {
+    secondsLeft = lengths[mode] * 60;
+  }
+  render();
+}
+
+function toggleSettings() {
+  const open = el.settings.hidden;
+  el.settings.hidden = !open;
+  el.settingsToggle.setAttribute("aria-expanded", String(open));
+}
+
+/* Wiring */
+
+el.toggle.addEventListener("click", () => (isRunning() ? pause() : start()));
+el.reset.addEventListener("click", reset);
+el.modes.forEach((button) => {
+  button.addEventListener("click", () => selectMode(button.dataset.mode));
+});
+el.settingsToggle.addEventListener("click", toggleSettings);
+el.form.addEventListener("submit", save);
+el.restore.addEventListener("click", restore);
+
+document.addEventListener("keydown", (event) => {
+  const typing = event.target instanceof HTMLInputElement;
+  if (typing) return;
+
+  if (event.code === "Space") {
+    event.preventDefault();
+    isRunning() ? pause() : start();
+  }
+  if (event.key.toLowerCase() === "r") {
+    reset();
+  }
 });
 
-updateDisplay();
+readStored();
+fillInputs();
+secondsLeft = lengths[mode] * 60;
+render();

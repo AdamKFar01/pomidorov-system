@@ -1,70 +1,371 @@
+/* Pomidorov
+   Accent is pulled from the logo's tomato red. One accent, locked across every
+   state: break sessions are distinguished by label and selection, never by
+   swapping the accent colour.
+   Radius rule, applied everywhere: surfaces 16px, inputs 10px, interactive
+   controls full pill. */
+
+:root {
+  color-scheme: light dark;
+
+  --accent: #c8402c;
+  --accent-ink: #ffffff;
+  --accent-soft: rgb(200 64 44 / 0.10);
+
+  /* Warm neutrals only. No cool greys anywhere in this file. */
+  --bg: #faf9f8;
+  --surface: #ffffff;
+  --line: #e7e3e0;
+  --ink: #1c1a19;
+  --ink-soft: #6d6763;
+  --ink-faint: #938d88;
+
+  --radius-surface: 16px;
+  --radius-input: 10px;
+
+  --gap: 20px;
+  --shadow: 0 1px 2px rgb(28 26 25 / 0.05), 0 12px 32px rgb(28 26 25 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #e2604a;
+    --accent-ink: #1c1210;
+    --accent-soft: rgb(226 96 74 / 0.14);
+
+    --bg: #161413;
+    --surface: #1f1c1a;
+    --line: #322d2a;
+    --ink: #f4f1ef;
+    --ink-soft: #a8a09b;
+    --ink-faint: #7c7470;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.32);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e1e2f;
-  color: #f2f2f2;
-  font-family: sans-serif;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
-  text-align: center;
-}
-
-.modes {
+  width: 100%;
+  max-width: 380px;
   display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+  gap: var(--gap);
 }
 
-.mode-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  background: #33334d;
-  color: #f2f2f2;
+/* Header */
+
+.bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.wordmark {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+}
+
+/* Stage */
+
+.stage {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow);
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.session {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+/* The only dot in the interface, and it carries real state. */
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ink-faint);
+}
+
+.dot[data-state="running"] {
+  background: var(--accent);
+}
+
+.dot[data-state="done"] {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.session-state {
+  color: var(--ink-faint);
+}
+
+.session-state::before {
+  content: "·";
+  margin-right: 8px;
+}
+
+.readout {
+  margin: 0;
+  font-size: 76px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.readout[data-finished="true"] {
+  color: var(--accent);
+}
+
+/* Segmented session picker */
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  width: 100%;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.segmented button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 4px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
 }
 
-.mode-btn.active {
-  background: #e74c3c;
+.segmented button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(28 26 25 / 0.08);
 }
 
-.timer {
-  font-size: 5rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
+@media (prefers-color-scheme: dark) {
+  .segmented button[aria-selected="true"] {
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+  }
 }
+
+/* Buttons */
 
 .controls {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  margin-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  width: 100%;
 }
 
-.controls button {
-  padding: 0.6rem 1.2rem;
-  border: none;
-  border-radius: 6px;
-  background: #e74c3c;
-  color: white;
-  font-size: 1rem;
+button {
+  font: inherit;
   cursor: pointer;
 }
 
-.controls button:hover {
-  opacity: 0.9;
+.primary,
+.secondary,
+.ghost {
+  border-radius: 999px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 60ms ease;
 }
 
-.count {
-  font-size: 0.9rem;
-  color: #aaa;
+.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, black);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.secondary:hover {
+  border-color: var(--ink-faint);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.ghost:hover {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.primary:active,
+.secondary:active,
+.ghost:active {
+  transform: scale(0.98);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Tally */
+
+.tally {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.tally-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tally-label {
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+/* Settings */
+
+.settings {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.settings[hidden] {
+  display: none;
+}
+
+.settings-title {
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.field label {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+input[type="number"] {
+  width: 84px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="number"]:hover {
+  border-color: var(--ink-faint);
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--accent);
+}
+
+.unit {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.error[hidden] {
+  display: none;
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.saved {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.saved[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

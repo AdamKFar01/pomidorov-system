@@ -216,16 +216,29 @@ el.settingsToggle.addEventListener("click", toggleSettings);
 el.form.addEventListener("submit", save);
 el.restore.addEventListener("click", restore);
 
+/* Shortcuts get hit constantly, so their state changes land with no
+   transition. The flag is read by CSS and cleared once the frame has
+   painted, which keeps pointer interactions animated as normal. */
+function withoutMotion(action) {
+  document.body.dataset.input = "keyboard";
+  action();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      delete document.body.dataset.input;
+    });
+  });
+}
+
 document.addEventListener("keydown", (event) => {
-  const typing = event.target instanceof HTMLInputElement;
-  if (typing) return;
+  if (event.target instanceof HTMLInputElement) return;
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
 
   if (event.code === "Space") {
     event.preventDefault();
-    isRunning() ? pause() : start();
+    withoutMotion(() => (isRunning() ? pause() : start()));
   }
   if (event.key.toLowerCase() === "r") {
-    reset();
+    withoutMotion(reset);
   }
 });
 

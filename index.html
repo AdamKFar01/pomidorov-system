@@ -2,28 +2,89 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pomodoro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pomidorov</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app">
-    <h1>Pomodoro</h1>
 
-    <div class="modes">
-      <button class="mode-btn active" data-mode="work">Work</button>
-      <button class="mode-btn" data-mode="short">Short Break</button>
-      <button class="mode-btn" data-mode="long">Long Break</button>
-    </div>
+    <header class="bar">
+      <span class="wordmark">Pomidorov</span>
+      <button
+        type="button"
+        class="ghost"
+        id="settingsToggle"
+        aria-expanded="false"
+        aria-controls="settings">Settings</button>
+    </header>
 
-    <div class="timer" id="timer">25:00</div>
+    <section class="stage" aria-labelledby="sessionLabel">
+      <p class="session" id="sessionLabel">
+        <span class="dot" data-state="idle" aria-hidden="true"></span>
+        <span id="sessionName">Focus</span>
+        <span class="session-state" id="sessionState">Ready</span>
+      </p>
 
-    <div class="controls">
-      <button id="startBtn">Start</button>
-      <button id="pauseBtn">Pause</button>
-      <button id="resetBtn">Reset</button>
-    </div>
+      <p class="readout" id="timer" role="timer" aria-live="polite" aria-atomic="true">25:00</p>
 
-    <p class="count">Pomodoros done: <span id="count">0</span></p>
+      <div class="segmented" role="tablist" aria-label="Session type">
+        <button type="button" role="tab" aria-selected="true" data-mode="work">Focus</button>
+        <button type="button" role="tab" aria-selected="false" data-mode="short">Short break</button>
+        <button type="button" role="tab" aria-selected="false" data-mode="long">Long break</button>
+      </div>
+
+      <div class="controls">
+        <button type="button" class="primary" id="toggleBtn">Start</button>
+        <button type="button" class="secondary" id="resetBtn">Reset</button>
+      </div>
+    </section>
+
+    <footer class="tally">
+      <span class="tally-value" id="count">0</span>
+      <span class="tally-label">focus sessions finished today</span>
+    </footer>
+
+    <section class="settings" id="settings" hidden>
+      <h2 class="settings-title">Session lengths</h2>
+
+      <form id="settingsForm" novalidate>
+        <div class="field">
+          <label for="workLen">Focus</label>
+          <div class="input-row">
+            <input type="number" id="workLen" name="work" min="1" max="180" step="1" value="25" inputmode="numeric">
+            <span class="unit">min</span>
+          </div>
+          <p class="error" id="workLenError" role="alert" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="shortLen">Short break</label>
+          <div class="input-row">
+            <input type="number" id="shortLen" name="short" min="1" max="180" step="1" value="5" inputmode="numeric">
+            <span class="unit">min</span>
+          </div>
+          <p class="error" id="shortLenError" role="alert" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="longLen">Long break</label>
+          <div class="input-row">
+            <input type="number" id="longLen" name="long" min="1" max="180" step="1" value="15" inputmode="numeric">
+            <span class="unit">min</span>
+          </div>
+          <p class="error" id="longLenError" role="alert" hidden></p>
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" class="ghost" id="restoreBtn">Restore defaults</button>
+        </div>
+
+        <p class="saved" id="savedNote" role="status" hidden>Saved</p>
+      </form>
+    </section>
+
   </main>
 
   <script src="script.js"></script>

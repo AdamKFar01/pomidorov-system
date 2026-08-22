@@ -11,6 +11,10 @@
   --accent: #c8402c;
   --accent-ink: #ffffff;
   --accent-soft: rgb(200 64 44 / 0.10);
+  /* Hover moves away from the label colour, which is darker here and
+     lighter in dark mode. Mixing toward black in both themes would sink
+     dark-mode contrast below AA. */
+  --accent-hover: #b03827;
 
   /* Warm neutrals only. No cool greys anywhere in this file. */
   --bg: #faf9f8;
@@ -23,8 +27,14 @@
   --radius-surface: 16px;
   --radius-input: 10px;
 
+  /* Built-in CSS easings are too weak to read as intentional. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --press: 160ms;
+  --panel-in: 200ms;
+  --panel-out: 150ms;
+
   --gap: 20px;
-  --shadow: 0 1px 2px rgb(28 26 25 / 0.05), 0 12px 32px rgb(28 26 25 / 0.06);
+  --shadow-raised: 0 1px 2px rgb(28 26 25 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +42,7 @@
     --accent: #e2604a;
     --accent-ink: #1c1210;
     --accent-soft: rgb(226 96 74 / 0.14);
+    --accent-hover: #ef7660;
 
     --bg: #161413;
     --surface: #1f1c1a;
@@ -40,7 +51,7 @@
     --ink-soft: #a8a09b;
     --ink-faint: #918984;
 
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.32);
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.5);
   }
 }
 
@@ -85,11 +96,12 @@ body {
 
 /* Stage */
 
+/* A defined edge, not a soft elevation. Pairing both is the generated-UI
+   signature the detector flags, and the edge suits an instrument better. */
 .stage {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-surface);
-  box-shadow: var(--shadow);
   padding: 28px 24px 24px;
   display: flex;
   flex-direction: column;
@@ -113,15 +125,30 @@ body {
   height: 7px;
   border-radius: 999px;
   background: var(--ink-faint);
+  transition:
+    background-color var(--press) ease,
+    box-shadow var(--press) var(--ease-out);
 }
 
 .dot[data-state="running"] {
   background: var(--accent);
 }
 
+/* Finishing happens a handful of times a day, so it earns a moment.
+   One shot, no loop. */
 .dot[data-state="done"] {
   background: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+  animation: ring 260ms var(--ease-out);
+}
+
+@keyframes ring {
+  from {
+    box-shadow: 0 0 0 0 var(--accent-soft);
+  }
+  to {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
 }
 
 .session-state {
@@ -141,6 +168,12 @@ body {
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+/* Colour only. The digits themselves never animate: they change 60 times a
+   minute, and motion there would be noise. */
+.readout {
+  transition: color 240ms ease;
 }
 
 .readout[data-finished="true"] {
@@ -171,18 +204,20 @@ body {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
+  transition:
+    background-color var(--press) var(--ease-out),
+    color var(--press) var(--ease-out);
+}
+
+.segmented button:active {
+  transform: scale(0.97);
+  transition: transform var(--press) var(--ease-out);
 }
 
 .segmented button[aria-selected="true"] {
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgb(28 26 25 / 0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  .segmented button[aria-selected="true"] {
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
-  }
+  box-shadow: var(--shadow-raised);
 }
 
 /* Buttons */
@@ -208,7 +243,11 @@ button {
   font-weight: 500;
   white-space: nowrap;
   border: 1px solid transparent;
-  transition: background-color 120ms ease, border-color 120ms ease, transform 60ms ease;
+  transition:
+    transform var(--press) var(--ease-out),
+    background-color var(--press) ease,
+    border-color var(--press) ease,
+    color var(--press) ease;
 }
 
 .primary {
@@ -216,18 +255,10 @@ button {
   color: var(--accent-ink);
 }
 
-.primary:hover {
-  background: color-mix(in srgb, var(--accent) 88%, black);
-}
-
 .secondary {
   background: transparent;
   border-color: var(--line);
   color: var(--ink);
-}
-
-.secondary:hover {
-  border-color: var(--ink-faint);
 }
 
 .ghost {
@@ -237,15 +268,26 @@ button {
   font-size: 13px;
 }
 
-.ghost:hover {
-  color: var(--ink);
-  background: var(--accent-soft);
+/* Touch devices fire hover on tap, which reads as a stuck state. */
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .secondary:hover {
+    border-color: var(--ink-faint);
+  }
+
+  .ghost:hover {
+    color: var(--ink);
+    background: var(--accent-soft);
+  }
 }
 
 .primary:active,
 .secondary:active,
 .ghost:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 :focus-visible {
@@ -279,12 +321,34 @@ button {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-surface);
-  box-shadow: var(--shadow);
   padding: 20px;
+}
+
+/* Enter 200ms, exit 150ms. The system should respond faster than it reveals. */
+.settings {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--panel-in) var(--ease-out),
+    transform var(--panel-in) var(--ease-out),
+    display var(--panel-in) allow-discrete;
+}
+
+@starting-style {
+  .settings {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 .settings[hidden] {
   display: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity var(--panel-out) var(--ease-out),
+    transform var(--panel-out) var(--ease-out),
+    display var(--panel-out) allow-discrete;
 }
 
 .settings-title {
@@ -324,8 +388,10 @@ input[type="number"] {
   font-variant-numeric: tabular-nums;
 }
 
-input[type="number"]:hover {
-  border-color: var(--ink-faint);
+@media (hover: hover) and (pointer: fine) {
+  input[type="number"]:hover {
+    border-color: var(--ink-faint);
+  }
 }
 
 input[aria-invalid="true"] {
@@ -364,8 +430,38 @@ input[aria-invalid="true"] {
   display: none;
 }
 
+/* Reduced motion means gentler, not none. Colour and opacity still carry
+   meaning, so they stay; everything positional goes. */
 @media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
+  .settings,
+  .settings[hidden] {
+    transform: none;
+    transition:
+      opacity var(--panel-out) var(--ease-out),
+      display var(--panel-out) allow-discrete;
   }
+
+  .primary:active,
+  .secondary:active,
+  .ghost:active,
+  .segmented button:active {
+    transform: none;
+  }
+
+  .dot[data-state="done"] {
+    animation: none;
+  }
+}
+
+/* Actions fired from the keyboard repeat all day. Animating them makes the
+   interface feel laggy, so state changes land instantly. */
+[data-input="keyboard"] .dot,
+[data-input="keyboard"] .readout,
+[data-input="keyboard"] .primary,
+[data-input="keyboard"] .secondary {
+  transition-duration: 0ms;
+}
+
+[data-input="keyboard"] .dot[data-state="done"] {
+  animation: none;
 }

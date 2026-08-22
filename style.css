@@ -18,7 +18,7 @@
   --line: #e7e3e0;
   --ink: #1c1a19;
   --ink-soft: #6d6763;
-  --ink-faint: #938d88;
+  --ink-faint: #787170;
 
   --radius-surface: 16px;
   --radius-input: 10px;
@@ -38,7 +38,7 @@
     --line: #322d2a;
     --ink: #f4f1ef;
     --ink-soft: #a8a09b;
-    --ink-faint: #7c7470;
+    --ink-faint: #918984;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.32);
   }

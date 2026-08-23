@@ -180,6 +180,25 @@ body {
   color: var(--accent);
 }
 
+/* Set progress. Bars rather than dots: these carry meaning, and the one
+   dot in this interface already means session state. */
+.set {
+  display: flex;
+  gap: 5px;
+}
+
+.set span {
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background-color var(--press) var(--ease-out);
+}
+
+.set span[data-done="true"] {
+  background: var(--accent);
+}
+
 /* Segmented session picker */
 
 .segmented {

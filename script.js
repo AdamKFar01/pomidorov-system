@@ -141,6 +141,67 @@ function complete() {
   }
 
   pending = wasWork ? (inSet >= SET_LENGTH ? "long" : "short") : "work";
+
+  announce(LABELS[mode], LABELS[pending]);
+}
+
+/* A focus timer you have to watch is not doing its job, so the end of a
+   session has to reach you when the window is behind something else. */
+function announce(justFinished, next) {
+  chime();
+
+  if (typeof Notification === "undefined") return;
+
+  const show = () => {
+    try {
+      new Notification(`${justFinished} finished`, {
+        body: `${next} is up next.`,
+        silent: true, // the chime already played
+      });
+    } catch {
+      // Notifications are a courtesy; never let one break the timer.
+    }
+  };
+
+  if (Notification.permission === "granted") {
+    show();
+  } else if (Notification.permission !== "denied") {
+    Notification.requestPermission().then((result) => {
+      if (result === "granted") show();
+    });
+  }
+}
+
+/* Two short tones, synthesised rather than shipped as an audio file. */
+function chime() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+
+    [0, 0.18].forEach((offset, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.value = index === 0 ? 660 : 880;
+
+      /* Ramped, not switched. A square-edged gain change clicks. */
+      gain.gain.setValueAtTime(0, now + offset);
+      gain.gain.linearRampToValueAtTime(0.18, now + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.16);
+
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.18);
+    });
+
+    setTimeout(() => ctx.close(), 800);
+  } catch {
+    // No audio device, autoplay blocked, or context limit reached.
+  }
 }
 
 /* Moves onto the queued session. Auto-starting a break for someone who

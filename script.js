@@ -3,11 +3,17 @@ const LABELS = { work: "Focus", short: "Short break", long: "Long break" };
 const STORE_KEY = "pomidorov.lengths";
 const LIMITS = { min: 1, max: 180 };
 
+/* The technique runs in sets: four focus sessions, a short break after each
+   of the first three, then a long break that closes the set. */
+const SET_LENGTH = 4;
+
 let lengths = { ...DEFAULTS };
 let mode = "work";
 let secondsLeft = lengths.work * 60;
 let ticker = null;
 let finished = 0;
+let inSet = 0;
+let pending = null;
 
 const el = {
   timer: document.getElementById("timer"),
@@ -23,6 +29,7 @@ const el = {
   form: document.getElementById("settingsForm"),
   restore: document.getElementById("restoreBtn"),
   saved: document.getElementById("savedNote"),
+  set: document.getElementById("setProgress"),
 };
 
 const inputs = {
@@ -50,8 +57,18 @@ function render() {
   const done = secondsLeft === 0;
   el.timer.dataset.finished = String(done);
   el.sessionName.textContent = LABELS[mode];
-  el.toggle.textContent = isRunning() ? "Pause" : "Start";
   el.count.textContent = String(finished);
+  renderSet();
+
+  /* One primary control, three jobs: pause, resume, or move onto what the
+     technique says comes next. */
+  if (isRunning()) {
+    el.toggle.textContent = "Pause";
+  } else if (pending) {
+    el.toggle.textContent = `Start ${LABELS[pending].toLowerCase()}`;
+  } else {
+    el.toggle.textContent = "Start";
+  }
 
   if (done) {
     el.sessionState.textContent = "Finished";
@@ -68,10 +85,29 @@ function render() {
   }
 }
 
+/* How far through the set of four you are. Without this the long break
+   arrives as a surprise, and the tally only ever counts upward. */
+function renderSet() {
+  if (!el.set) return;
+
+  const marks = el.set.querySelectorAll("[data-step]");
+  marks.forEach((mark, index) => {
+    mark.dataset.done = String(index < inSet);
+  });
+
+  el.set.setAttribute(
+    "aria-label",
+    `Focus session ${Math.min(inSet + 1, SET_LENGTH)} of ${SET_LENGTH}`
+  );
+}
+
 /* Timer */
 
 function start() {
-  if (isRunning() || secondsLeft === 0) return;
+  if (isRunning()) return;
+  /* Pressing start on a finished session moves onto the queued one. */
+  if (secondsLeft === 0) advance();
+  if (secondsLeft === 0) return;
   ticker = setInterval(tick, 1000);
   render();
 }
@@ -88,22 +124,60 @@ function tick() {
     secondsLeft = 0;
     clearInterval(ticker);
     ticker = null;
-    if (mode === "work") finished += 1;
+    complete();
   }
   render();
 }
 
+/* Called once, when a session reaches zero. The finished session stays on
+   screen and the next one is queued, so the completed state is actually
+   visible instead of being skipped past. */
+function complete() {
+  const wasWork = mode === "work";
+
+  if (wasWork) {
+    finished += 1;
+    inSet += 1;
+  }
+
+  pending = wasWork ? (inSet >= SET_LENGTH ? "long" : "short") : "work";
+}
+
+/* Moves onto the queued session. Auto-starting a break for someone who
+   walked away just burns the break, so this only runs on a deliberate press. */
+function advance() {
+  if (!pending) return;
+
+  /* The long break closes the set, so the count restarts behind it. */
+  if (pending === "long") inSet = 0;
+
+  mode = pending;
+  pending = null;
+  secondsLeft = lengths[mode] * 60;
+  syncModeButtons();
+}
+
 function reset() {
   pause();
+  /* Reset re-runs the session you just finished rather than skipping ahead. */
+  pending = null;
   secondsLeft = lengths[mode] * 60;
   render();
 }
 
+function syncModeButtons() {
+  el.modes.forEach((button) => {
+    button.setAttribute("aria-selected", String(button.dataset.mode === mode));
+  });
+}
+
+/* Manual switching overrides the set. Picking a long break yourself closes
+   the set the same way finishing one does. */
 function selectMode(next) {
   mode = next;
-  el.modes.forEach((button) => {
-    button.setAttribute("aria-selected", String(button.dataset.mode === next));
-  });
+  pending = null;
+  if (next === "long") inSet = 0;
+  syncModeButtons();
   reset();
 }
 

@@ -30,6 +30,7 @@ const el = {
   restore: document.getElementById("restoreBtn"),
   saved: document.getElementById("savedNote"),
   set: document.getElementById("setProgress"),
+  segmented: document.getElementById("segmented"),
 };
 
 const inputs = {
@@ -230,6 +231,8 @@ function syncModeButtons() {
   el.modes.forEach((button) => {
     button.setAttribute("aria-selected", String(button.dataset.mode === mode));
   });
+  /* The thumb's position is driven off this, so it slides on its own. */
+  if (el.segmented) el.segmented.dataset.selected = mode;
 }
 
 /* Manual switching overrides the set. Picking a long break yourself closes

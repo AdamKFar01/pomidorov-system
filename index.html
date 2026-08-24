@@ -20,13 +20,18 @@
     </header>
 
     <section class="stage" aria-labelledby="sessionLabel">
-      <p class="session" id="sessionLabel">
+      <!-- The live region belongs here, on the state, which changes a few
+           times per session. -->
+      <p class="session" id="sessionLabel" aria-live="polite" aria-atomic="true">
         <span class="dot" data-state="idle" aria-hidden="true"></span>
         <span id="sessionName">Focus</span>
         <span class="session-state" id="sessionState">Ready</span>
       </p>
 
-      <p class="readout" id="timer" role="timer" aria-live="polite" aria-atomic="true">25:00</p>
+      <!-- Never announced automatically: this text changes every second, and
+           a screen reader would read the countdown aloud for 25 minutes
+           straight. role="timer" keeps it readable on demand. -->
+      <p class="readout" id="timer" role="timer" aria-live="off">25:00</p>
 
       <div class="set" id="setProgress" role="img" aria-label="Focus session 1 of 4">
         <span data-step="1" data-done="false"></span>

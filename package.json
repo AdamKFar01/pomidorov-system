@@ -8,7 +8,7 @@
     "dist": "electron-builder --mac"
   },
   "author": "Adam Farhat",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "devDependencies": {
     "electron": "^43.4.1",
